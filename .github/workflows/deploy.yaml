@@ -1,0 +1,61 @@
+name: Deploy to GitHub Pages
+
+# Kör workflow vid push till main och när vi kör det manuellt
+on:
+  push:
+    branches: [main]
+  # Tillåter manuell körning från Actions-fliken
+  workflow_dispatch:
+
+# Sätt permissions som krävs för GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Tillåt endast en deployment åt gången
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Hämta koden
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Sätt upp Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # Installera dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Bygg projektet
+      - name: Build project
+        run: npm run build
+
+      # Konfigurera GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # Ladda upp byggmappen
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      # Deploya till GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
